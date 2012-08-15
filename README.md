@@ -41,15 +41,15 @@ We can add mappings (but never take them away):
     {"X65U9zzmdcFqBX7747SdO38xuok": ["sp|P50110", "gb|AAS56315.1", "ref|NP_013776.1"], "result": "success"}
     
 ## DONE:
-* Insert a single seguid:[id_list] mapping, 
+* Insert a single seguid:[id_list] mapping using PUT, 
   blindly trusting that client correctly calculated hash
-* Add addtional ids to a seguid:[id_list] mapping, 
+* Add addtional ids to a seguid:[id_list] mapping using PUT, 
   (also blindly trusting client)
 * Retrieve a seguid:[id_list] mapping
 * Retrieve multiple seguid:[id_list] mappings in one operation
 
 ## TODO:
-* Insert multiple seguid:[id_list] mappings at once.
+* Insert multiple seguid:[id_list] mappings at once using POST to /seguid/.
 * Insert seguid mappings via FASTA sequence(s). Only accept sane FASTA headers
   that can create good mappings via the commandline tool 
   (Hashes calculated server-side without authentication, calculated 
