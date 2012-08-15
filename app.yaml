@@ -1,0 +1,18 @@
+application: seguid-engine
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+libraries:
+- name: jinja2
+  version: "2.6"
+- name: django
+  version: "1.3"
+
+env_variables:
+  DJANGO_SETTINGS_MODULE: 'settings'
+
+handlers:
+- url: /.*
+  script: main.app
