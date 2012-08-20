@@ -143,13 +143,50 @@ class SeguidMapping(webapp2.RequestHandler):
       self.response.out.write('')
       return
 
-# TODO: sequence id to seguid 'reverse' mapping
 class IdMapping(webapp2.RequestHandler):
   """
-  Takes a sequence id and returns the SEGUID.
+  Takes a comma-separated list of sequence id(s) and returns the matching SEGUID(s).
   """
   def get(self, seq_id):
-    pass
+    """
+    Return all SEGUIDS matching a list of comma separated ids as JSON.
+
+      eg. http://seguid-engine.appspot.com/id/gb|AAS56315.1
+
+      Returns:
+      {"result": "success", "gb|AAS56315.1": "X65U9zzmdcFqBX7747SdO38xuok"}    
+    
+    If an id in the list doesn't exist, return a mapping to an
+    empty string for that id. If none of the ids exist, return 404.
+    """
+    if not seq_id:  # the user did not supply an ID
+      self.response.status = 400 # Bad request
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write('{"result":"malformed request"}')
+      return
+
+    s_ids = seq_id.split(',')
+    out = {}
+    one_success = False
+
+    for _id in s_ids:
+      sl = Seguid.all().filter("ids = ", _id) # '=' also means 'contains'
+      sl = sl.get()
+      if sl: # only need 1 result
+        out[_id] = sl.seguid
+        one_success = True
+      else:
+        out[_id] = '' # no resulting SEGUID found
+
+    self.response.headers['Content-Type'] = 'application/json'
+    if one_success:
+      out['result'] = 'success'
+      self.response.status = 200 # success
+    else:
+      out['result'] = 'ids not found'
+      self.response.status = 404 # not found
+    self.response.out.write(simplejson.dumps(out))
+
 
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/seguid', SeguidMapping),
