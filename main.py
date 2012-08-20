@@ -106,7 +106,7 @@ class SeguidMapping(webapp2.RequestHandler):
       self.response.out.write(out)
       return
   
-  def put(self, seguid):
+  def post(self, seguid):
     """
     Adds a mapping between a SEGUID and a set of sequence identifiers.
     
