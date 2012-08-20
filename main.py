@@ -69,29 +69,68 @@ class SeguidMapping(webapp2.RequestHandler):
     else:
       seguids = [seguid_str]
     
+    #################################################################
+    # Retrieve SEGUID entities
+    #
+    # There are three implementations here:
+    # 
+    # 1. a normal query not using the key or key_name
+    # 2. a get by a list of keys in one operation
+    # 3. a set of get_async requests, by key
+    #
+    # It would be interesting to benchmark each approach, and maybe
+    # a few others, with different sized requests.
+    #
+    
+    """
+    # 1. non-async query of seguid entities
     out = {'result':'seguids not found'}
-    at_least_some_success = False
     seguid_entities = []
     for s in seguids:
-      #ids = Seguid.get_by_key_name('seguid:'+s).ids
       se = Seguid.all().filter("seguid =", s).get()
       if se:
         out[s] = se.ids
         out['result'] = 'success'
       else:
         out[s] = []
-    
-    # async version
     """
+    
+    """
+    # 2. non-async, single-get operation
+    out = {'result':'seguids not found'}
+    seguid_entities = []
+    skeys = []
+    for s in seguids:
+      skeys.append(db.Key.from_path(Seguid.kind(), 'seguid:'+s))
+    # grab every Seguid by key in a single get operation
+    seguid_entities = db.get(skeys)
+    for se in seguid_entities:
+      if se:
+        out[s] = se.ids
+        out['result'] = 'success'
+      else:
+        out[s] = []
+    """
+    
+    # 3. async get seguids by key
+    out = {'result':'seguids not found'}
+    seguid_entities = []
     for s in seguids:
       # convert a key_name into a Key so that we can then use
       # async query
       seguid_key = db.Key.from_path(Seguid.kind(), 'seguid:'+s)
-      seguid_entities.append(Seguid.get_async(seguid_key))
+      seguid_entities.append(db.get_async(seguid_key))
     # get results from async lookups
     for se in seguid_entities:
-      out[s] = se.ids
-    """
+      se = se.get_result()
+      if se:
+        out[s] = se.ids
+        out['result'] = 'success'
+      else:
+        out[s] = []
+    
+    #
+    #################################################################
       
     if out['result'] == 'success':
       # success
