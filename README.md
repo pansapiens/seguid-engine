@@ -28,46 +28,58 @@ What is a SEGUID ? Look here => http://bioinformatics.anl.gov/seguid/
 
 #### Store SEGUID <-> ID mappings using SEGUIDs calculated by the server, using the sequence:
 
-    TODO
+    $  curl -i -H 'content-type:application/json' -d @seguid_post_example.json http://localhost:8080/seguid
+        
+    HTTP/1.0 201
+    {"failed": [], "inserted": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "result": "success"}
+    
+    ... where the input file seguid_post_exaple.json contains:
+    
+    [{"ids": ["sp|P50110", "gb|AAS56315.1"], "seq": "MVKGSVHLWGKDGKASLISV"}, {"ids": ["sp|A2QRI9"], "seq": "MSVQMALPRPQVGLIVPRPQ"}]
 
 #### Store a SEGUID <-> ID mappings using client-side calculated SEGUIDs:
-    $ curl -i -X POST -d "ids=sp|P50110,ref|NP_013776.1" "http://localhost:8080/seguid/X65U9zzmdcFqBX7747SdO38xuok"
-
-    HTTP/1.0 201
+    _TODO_
+    _Example of authenticating with curl, saving the cookie, then using it in a request_
 
 ### Update:
 
-We can add mappings (but never take them away):
+As per creating SEGUID mappings. We can add additional mappings, 
+but never take them away.
 
-    $ curl -i -X GET "http://localhost:8080/seguid/X65U9zzmdcFqBX7747SdO38xuok"
+### Bulk insertion from a FASTA database:
 
-    HTTP/1.0 200 
- {"X65U9zzmdcFqBX7747SdO38xuok": ["sp|P50110", "ref|NP_013776.1"], "result": "success"}
-
-    $ curl -i -X POST -d "ids=gb|AAS56315.1" "http://localhost:8080/seguid/X65U9zzmdcFqBX7747SdO38xuok"
-
-    HTTP/1.0 204 
-
-    $ curl -i -X GET "http://localhost:8080/seguid/X65U9zzmdcFqBX7747SdO38xuok"
-
-    HTTP/1.0 200
-    {"X65U9zzmdcFqBX7747SdO38xuok": ["sp|P50110", "gb|AAS56315.1", "ref|NP_013776.1"], "result": "success"}
+A tool is provided to insert large numbers of sequences from a FASTA-formatted
+sequence file. It can extract IDs from the standard FASTA header used by NCBI
+or Uniprot.
     
+    $ ./insert_fasta.py --help
+      Usage: insert_fasta.py [options]
+
+      Options:
+        -h, --help            show this help message and exit
+        -u, --uniprot         Input file has Uniprot style FASTA headers.
+                        Otherwise NCBI style is assumed
+        -s SERVER_URL, --server=SERVER_URL
+                        Input file has Uniprot style FASTA headers.
+                        Otherwise NCBI style is assumed
+                        
+    $ ./insert_fasta.py -u -s http://localhost:8080 my_uniprot_sequences.fasta
+
+
 ## DONE:
-* Insert a single seguid:[id_list] mapping using PUT, 
-  blindly trusting that client correctly calculated hash
-* Add addtional ids to a seguid:[id_list] mapping using PUT, 
+* Add addtional ids to a seguid:[id_list] mapping using POST, 
   (also blindly trusting client)
 * Retrieve a seguid:[id_list] mapping
 * Retrieve multiple seguid:[id_list] mappings in one operation
 * Retrieve SEGUID's based on ID (Thanks to jcao219).
-
-## TODO:
-* Insert multiple seguid:[id_list] mappings at once using POST to /seguid/.
 * Insert seguid mappings via FASTA sequence(s). Only accept sane FASTA headers
   that can create good mappings via the commandline tool 
   (Hashes calculated server-side without authentication, calculated 
-   client-side with authentication. Limit daily anonymous insertions).
+   client-side with authentication.).
+* Insert multiple seguid:[id_list] mappings at once using POST to /seguid/.
+   
+## TODO:
+
 * Add OpenID / Googe Account authentication to insert operations where 
   the hash is provided by the client. This way we can at least better track
   losers who dirty up the database.

@@ -18,6 +18,26 @@ jinja_environment = jinja2.Environment(
 def seq2seguid(seq):
   return base64.b64encode(sha.new(seq).digest()).strip("=")
 
+def check_seguid_sane(seguid):
+  """
+  Returns True if the provided SEGUID string appears valid.
+  """
+  if len(seguid) == 27:
+    return True
+  else:
+    return False
+
+def seguid_to_key(seguid):
+  """
+  Takes a SEGUID string and returns an App Engine datastore key
+  suitable for retrieving the associated Seguid entity using db.get().
+  eg:
+  
+    my_seguid = 'X65U9zzmdcFqBX7747SdO38xuok'
+    seguid_entity = db.get(seguid_to_key(my_seguid))
+  """
+  return db.Key.from_path(Seguid.kind(), 'seguid:'+seguid)
+
 # TODO: should be allow/require URL-encoded (RFC 4648) SEGUIDs ?
 #       in my testing (curl, Chrome) they don't seem necessary
 def b64url_to_b64(b64url_encoded_str):
@@ -145,9 +165,22 @@ class SeguidMapping(webapp2.RequestHandler):
       self.response.out.write(out)
       return
   
-  def post(self, seguid):
+  def post(self):
     """
     Adds a mapping between a SEGUID and a set of sequence identifiers.
+    Takes a JSON string as the POST body like:
+      [{'ids':['sp|P50110', 'gb|AAS56315.1'], 
+         'seq': 'MVKGSVHLWGKDGKASLISV'},
+       {'ids':['sp|A2QRI9'], 'seq': 'MSVQMALPRPQVGLIVPRPQ'},
+      ]
+      
+    or if client-side SEGUIDs have been provided:
+      [{'ids':['sp|P50110', 'gb|AAS56315.1'], 
+        'seguid': 'X65U9zzmdcFqBX7747SdO38xuok'},
+       {'ids':['sp|A2QRI9'], 'seguid': 'zgyRbn7/VaM2v7GxQ5VGiSoBZX8'},
+      ]
+    
+    Only authenticated users can provide client-side calculated SEGUIDs.
     
     If the SEGUID already exists in the datastore, we just add any
     sequence id mappings that don't already exist. We never remove mappings.
@@ -158,29 +191,88 @@ class SeguidMapping(webapp2.RequestHandler):
     # TODO: create from FASTA sequence and a set of id mappings
     #       return seqguid:[ids] list
     
-    id_str = str(self.request.get('ids'))
-    new_ids = []
-    if id_str:
+    #self.response.out.write(self.request.body+'\n')
+    #return
+    jreq = simplejson.loads(self.request.body)
+    creation_ops = []
+    update_ops = []
+    for i in jreq:
+      if 'ids' in i:
+        ids = i['ids']
+      else:
+        self.response.status = 400 # Bad request
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write('{"result":"malformed request"}')
+        
+      if 'seq' in i:
+        seq = i['seq']
+        seguid = seq2seguid(seq)
+      elif ('seguid' in i) and check_seguid_sane(i['seguid']):
+        seguid = i['seguid']
+        # check auth before continuing -
+        # we only want to trust client-side calculated
+        # seguids from authenticated users
+        if not users.get_current_user():
+          self.response.status = 401 # Unautorized
+          self.response.headers['Content-Type'] = 'application/json'
+          self.response.out.write('{"result":"unautorized"}')
+      else:
+        self.response.status = 400 # Bad request
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write('{"result":"malformed request"}')
+                
+      existing = db.get(seguid_to_key(seguid))
+      if existing:
+        existing.ids = list(set(existing.ids + ids))
+        update_ops.append( (seguid, db.put_async(existing)) )
+        #self.response.status = 204 # Success, (not returning any content)
+        #self.response.out.write('')
+        #return
+      else:
+        new_seguid = Seguid(seguid=seguid, ids=ids, 
+                            key_name='seguid:'+seguid)
+        creation_ops.append( (seguid, db.put_async(new_seguid)) )
+    
+    failed_list = []
+    created_list = []
+    for seguid, put_future in creation_ops:
       try:
-        new_ids = id_str.split(',')
+        put_future.check_success()
+        created_list.append(seguid)
       except:
-        self.response.status = 400 # Bad Request
-        self.response.out.write('')
-      
-    existing = Seguid.get_by_key_name('seguid:'+seguid)
-    if existing:
-      existing.ids = list(set(existing.ids + new_ids))
-      existing.put()
-      self.response.status = 204 # Success, (not returning any content)
-      self.response.out.write('')
+        failed_list.append(seguid)
+    
+    updated_list = []
+    for seguid, put_future in update_ops:
+      try:
+        put_future.check_success()
+        updated_list.append(seguid)
+      except:
+        failed_list.append(seguid)
+        
+    out = {'created':created_list, 
+           'updated':updated_list,
+           'failed':failed_list}
+           
+    if (created_list or updated_list) and not failed_list:
+      # complete success
+      out['result'] = 'success'
+      self.response.status = 201 # Success, resource created
+      self.response.out.write(simplejson.dumps(out))
+      return
+    elif (created_list or updated_list) and failed_list:
+      # partial success
+      out['result'] = 'partial success'
+      self.response.status = 202 # Accepted (but incomplete)
+      self.response.out.write(simplejson.dumps(out))
       return
     else:
-      new_seguid = Seguid(seguid=seguid, ids=new_ids, 
-                          key_name='seguid:'+seguid)
-      new_seguid.put()
-      self.response.status = 201 # Success, resource created
-      self.response.out.write('')
+      # miserable failure
+      out['result'] = 'fail'
+      self.response.status = 500 # Internal Server Error
+      self.response.out.write(simplejson.dumps(out))
       return
+      
 
 class IdMapping(webapp2.RequestHandler):
   """

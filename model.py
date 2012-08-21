@@ -8,3 +8,4 @@ class Seguid(db.Model):
   """
   seguid = db.StringProperty()
   ids = db.StringListProperty()
+  user = db.UserProperty(auto_current_user_add=True)

@@ -16,3 +16,4 @@ env_variables:
 handlers:
 - url: /.*
   script: main.app
+
