@@ -31,7 +31,7 @@ What is a SEGUID ? Look here => http://bioinformatics.anl.gov/seguid/
     $  curl -i -H 'content-type:application/json' -d @seguid_post_example.json http://localhost:8080/seguid
         
     HTTP/1.0 201
-    {"failed": [], "inserted": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "result": "success"}
+    {"failed": [], "created": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "updated": [], "result": "success"}
     
     ... where the input file seguid_post_exaple.json contains:
     
@@ -52,7 +52,7 @@ A tool is provided to insert large numbers of sequences from a FASTA-formatted
 sequence file. It can extract IDs from the standard FASTA header used by NCBI
 or Uniprot.
     
-    $ ./insert_fasta.py --help
+    $ ./tools/insert_fasta.py --help
       Usage: insert_fasta.py [options]
 
       Options:
