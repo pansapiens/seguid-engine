@@ -82,24 +82,24 @@ or Uniprot.
 Inserting/updating ~ 4000 typical sequences takes ~ 80 seconds 
 (~ 200 ms per sequence).
 
-  $ time tools/insert_fasta.py -f -u EcK12.fasta 
-  
-  # Inserting sequences 0 (6PGL_ECODH) to 500 (RL21_ECODH) 
-  # Inserting sequences 500 (RL22_ECODH) to 1000 (B1XEZ6_ECODH) 
-  # Inserting sequences 1000 (B1XGJ3_ECODH) to 1500 (B1X9I7_ECODH) 
-  # Inserting sequences 1500 (B1X9I8_ECODH) to 2000 (B1XF28_ECODH) 
-  # Inserting sequences 2000 (B1XF41_ECODH) to 2500 (B1XGP5_ECODH) 
-  # Inserting sequences 2500 (B1XGV7_ECODH) to 3000 (B1XE18_ECODH) 
-  # Inserting sequences 3000 (B1XEC7_ECODH) to 3500 (B1XDG2_ECODH) 
-  # Inserting sequences 3500 (B1XEE9_ECODH) to 3990 (B1XHB2_ECODH) 
-  # Done
-  # Created: 177
-  # Updated: 3813
-  # Failed: 0
+    $ time tools/insert_fasta.py -f -u EcK12.fasta 
+    
+    # Inserting sequences 0 (6PGL_ECODH) to 500 (RL21_ECODH) 
+    # Inserting sequences 500 (RL22_ECODH) to 1000 (B1XEZ6_ECODH) 
+    # Inserting sequences 1000 (B1XGJ3_ECODH) to 1500 (B1X9I7_ECODH) 
+    # Inserting sequences 1500 (B1X9I8_ECODH) to 2000 (B1XF28_ECODH) 
+    # Inserting sequences 2000 (B1XF41_ECODH) to 2500 (B1XGP5_ECODH) 
+    # Inserting sequences 2500 (B1XGV7_ECODH) to 3000 (B1XE18_ECODH) 
+    # Inserting sequences 3000 (B1XEC7_ECODH) to 3500 (B1XDG2_ECODH) 
+    # Inserting sequences 3500 (B1XEE9_ECODH) to 3990 (B1XHB2_ECODH) 
+    # Done
+    # Created: 177
+    # Updated: 3813
+    # Failed: 0
 
-  real	1m22.123s
-  user	0m0.136s
-  sys	0m0.036s
+    real	1m22.123s
+    user	0m0.136s
+    sys	0m0.036s
 
 ## DONE:
 * Add addtional ids to a seguid:[id_list] mapping using POST, 
