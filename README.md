@@ -53,16 +53,20 @@ sequence file. It can extract IDs from the standard FASTA header used by NCBI
 or Uniprot.
     
     $ ./tools/insert_fasta.py --help
-      Usage: insert_fasta.py [options]
+    Usage: insert_fasta.py [options]
 
       Options:
         -h, --help            show this help message and exit
         -u, --uniprot         Input file has Uniprot style FASTA headers.
-                        Otherwise NCBI style is assumed
+                              Otherwise NCBI style is assumed
         -s SERVER_URL, --server=SERVER_URL
-                        Input file has Uniprot style FASTA headers.
-                        Otherwise NCBI style is assumed
-                        
+                              Input file has Uniprot style FASTA headers.
+                              Otherwise NCBI style is assumed
+        -b BATCH_SIZE, --batch=BATCH_SIZE
+                              Number of sequences to insert per request.
+                              Lower this value if you get '500: Internal
+                              Server Error' due to timeouts.
+                  
     $ ./insert_fasta.py -u -s http://localhost:8080 my_uniprot_sequences.fasta
 
 
@@ -80,6 +84,7 @@ or Uniprot.
    
 ## TODO:
 
+* Use task queues for bulk insertion.
 * Add OpenID / Googe Account authentication to insert operations where 
   the hash is provided by the client. This way we can at least better track
   losers who dirty up the database.

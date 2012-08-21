@@ -28,7 +28,7 @@ def FastaHeader2Dic(s, uniprot_style=False):
     
 if __name__ == "__main__":
   import sys, urllib2, json
-  parser = OptionParser()
+  parser = OptionParser(usage = "usage: %prog [options] sequences.fasta")
   parser.add_option("-u", "--uniprot", action="store_true", 
                     dest="uniprot_fasta", default=False,
                     help="Input file has Uniprot style FASTA headers. \
@@ -38,13 +38,17 @@ if __name__ == "__main__":
                     default="http://seguid-engine.appspot.com",
                     help="Input file has Uniprot style FASTA headers. \
                           Otherwise NCBI style is assumed")
+  parser.add_option("-b", "--batch", 
+                    dest="batch_size", type="int", default=500,
+                    help="Number of sequences to insert per request. \
+                          Lower this value if you get '500: Internal \
+                          Server Error' due to timeouts.")
                          
   (options, args) = parser.parse_args()
   
-  if options.uniprot_fasta:
-    filetype = 'uniprot_fasta'
-  else:
-    filetype = 'ncbi_fasta'
+  if len(args) != 1:
+    parser.print_help()
+    sys.exit()
   
   server_url = options.server_url
   
@@ -57,17 +61,44 @@ if __name__ == "__main__":
       if seqids:
         seqs_to_send.append({'seq':seq, 'ids':seqids.values()})
       seq = ""
-      seqids = FastaHeader2Dic(l[1:])
+      seqids = FastaHeader2Dic(l[1:], uniprot_style=options.uniprot_fasta)
       continue
       
     seq += l.strip()
+  seqs_to_send.append({'seq':seq, 'ids':seqids.values()})
     
+  #print seqs_to_send
   #print json.dumps(seqs_to_send)
   
+    
   # package up sequence and ids as json
-  # send the whole lot to the server
+  # send the whole lot to the server in batches
   headers = {'Content-Type': 'application/json'}
+  start = 0
+  for end in range(options.batch_size, len(seqs_to_send), options.batch_size):
+
+    batch = seqs_to_send[start:end]
+    sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
+                     (start, \
+                      batch[0]['ids'][0], \
+                      end, \
+                      batch[-1:][0]['ids'][0]) )
+
+    req = urllib2.Request(server_url+'/seguid', 
+                          json.dumps(batch), headers)
+    start = end
+  
+  end = len(seqs_to_send)
+  batch = seqs_to_send[start:end+1]
+  sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
+                    (start, \
+                     batch[0]['ids'][0], \
+                     end, \
+                     batch[-1:][0]['ids'][0]) )
+  
   req = urllib2.Request(server_url+'/seguid', 
-                        json.dumps(seqs_to_send), headers)
-  print urllib2.urlopen(req).read()
+                        json.dumps(batch), headers)
+  
+  sys.stderr.write("# Done\n")
+  #print urllib2.urlopen(req).read()
   
