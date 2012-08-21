@@ -185,14 +185,7 @@ class SeguidMapping(webapp2.RequestHandler):
     If the SEGUID already exists in the datastore, we just add any
     sequence id mappings that don't already exist. We never remove mappings.
     """
-    # TODO: batch mode if SEGUID isn't specified on the URL
-    #       take a set of mappings is provided as a JSON payload
     
-    # TODO: create from FASTA sequence and a set of id mappings
-    #       return seqguid:[ids] list
-    
-    #self.response.out.write(self.request.body+'\n')
-    #return
     jreq = simplejson.loads(self.request.body)
     creation_ops = []
     update_ops = []
@@ -207,6 +200,11 @@ class SeguidMapping(webapp2.RequestHandler):
       if 'seq' in i:
         seq = i['seq']
         seguid = seq2seguid(seq)
+      # TODO: since server-side SEGUID hashing turns out to be
+      #       not prohibitively costly in terms of CPU time,
+      #       consider removing the option for client-side
+      #       calculated SEGUIDs altogether (eg, remove everything in
+      #       this elif ...)
       elif ('seguid' in i) and check_seguid_sane(i['seguid']):
         seguid = i['seguid']
         # check auth before continuing -

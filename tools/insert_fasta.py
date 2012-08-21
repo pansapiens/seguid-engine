@@ -43,6 +43,9 @@ if __name__ == "__main__":
                     help="Number of sequences to insert per request. \
                           Lower this value if you get '500: Internal \
                           Server Error' due to timeouts.")
+  parser.add_option("-f", "--failed", 
+                    dest="list_failed", action="store_true", default=False,
+                    help="List SEGUIDs that failed to insert.")
                          
   (options, args) = parser.parse_args()
   
@@ -74,6 +77,8 @@ if __name__ == "__main__":
   # package up sequence and ids as json
   # send the whole lot to the server in batches
   headers = {'Content-Type': 'application/json'}
+  tally = {'created':0, 'updated':0, 'failed':0}
+  failed = []
   start = 0
   for end in range(options.batch_size, len(seqs_to_send), options.batch_size):
 
@@ -87,7 +92,13 @@ if __name__ == "__main__":
     req = urllib2.Request(server_url+'/seguid', 
                           json.dumps(batch), headers)
     start = end
-  
+    resp = json.loads(urllib2.urlopen(req).read())
+    tally['created'] += len(resp['created'])
+    tally['updated'] += len(resp['updated'])
+    tally['failed'] += len(resp['failed'])
+    if resp['failed']:
+      failed.append(resp['failed'])
+    
   end = len(seqs_to_send)
   batch = seqs_to_send[start:end+1]
   sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
@@ -98,7 +109,22 @@ if __name__ == "__main__":
   
   req = urllib2.Request(server_url+'/seguid', 
                         json.dumps(batch), headers)
+  resp = json.loads(urllib2.urlopen(req).read())
+  tally['created'] += len(resp['created'])
+  tally['updated'] += len(resp['updated'])
+  tally['failed'] += len(resp['failed'])
+  if resp['failed']:
+      failed.append(resp['failed'])
   
   sys.stderr.write("# Done\n")
+  
+  if options.list_failed and failed:
+    sys.stderr.write("# Failed to insert: \n")
+    sys.stderr.write(`failed`+'\n')
+    
+  sys.stderr.write("# Created: %i\n# Updated: %i\n# Failed: %i\n" % \
+                   (tally['created'], 
+                    tally['updated'], 
+                    tally['failed']) )
   #print urllib2.urlopen(req).read()
   
