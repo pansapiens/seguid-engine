@@ -190,6 +190,7 @@ class SeguidMapping(webapp2.RequestHandler):
     
     creation_ops = []
     update_ops = []
+    unchanged_list = []
     for i in jreq:
       if 'ids' in i:
         ids = i['ids']
@@ -201,20 +202,6 @@ class SeguidMapping(webapp2.RequestHandler):
       if 'seq' in i:
         seq = i['seq']
         seguid = seq2seguid(seq)
-      # TODO: since server-side SEGUID hashing turns out to be
-      #       not prohibitively costly in terms of CPU time,
-      #       consider removing the option for client-side
-      #       calculated SEGUIDs altogether (eg, remove everything in
-      #       this elif ...)
-      elif ('seguid' in i) and check_seguid_sane(i['seguid']):
-        seguid = i['seguid']
-        # check auth before continuing -
-        # we only want to trust client-side calculated
-        # seguids from authenticated users
-        if not users.get_current_user():
-          self.response.status = 401 # Unautorized
-          self.response.headers['Content-Type'] = 'application/json'
-          self.response.out.write('{"result":"unautorized"}')
       else:
         self.response.status = 400 # Bad request
         self.response.headers['Content-Type'] = 'application/json'
@@ -228,6 +215,8 @@ class SeguidMapping(webapp2.RequestHandler):
         if len(existing.ids) != len(new_id_list):
           existing.ids = list(set(existing.ids + ids))
           update_ops.append( (seguid, db.put_async(existing)) )
+        else:
+          unchanged_list.append(seguid)
       else:
         new_seguid = Seguid(seguid=seguid, ids=ids, 
                             key_name='seguid:'+seguid)
@@ -252,15 +241,16 @@ class SeguidMapping(webapp2.RequestHandler):
         
     out = {'created':created_list, 
            'updated':updated_list,
+           'unchanged':unchanged_list,
            'failed':failed_list}
-           
-    if (created_list or updated_list) and not failed_list:
+
+    if (created_list or updated_list or unchanged_list) and not failed_list:
       # complete success
       out['result'] = 'success'
       self.response.status = 201 # Success, resource created
       self.response.out.write(simplejson.dumps(out))
       return
-    elif (created_list or updated_list) and failed_list:
+    elif (created_list or updated_list or unchanged_list) and failed_list:
       # partial success
       out['result'] = 'partial success'
       self.response.status = 202 # Accepted (but incomplete)

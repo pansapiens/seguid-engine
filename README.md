@@ -132,6 +132,8 @@ Inserting/updating ~ 4000 typical sequences takes ~ 80 seconds
 * Consider using Base32-SHA1 instead (like Magnet 
   http://en.wikipedia.org/wiki/Magnet_URI_scheme) since this is naturally URL
   and filesystem safe.
+* App Engine looks like it could become expensive for this type of application.
+  Consider replacing the App Engine datastore with MongoDB ( eg with https://github.com/mdirolf/mongo-appengine-connector ) (or just rewrite the data model & get/put bits) and run webapp2 as a standalone app on other hosting (http://webapp-improved.appspot.com/tutorials/quickstart.nogae.html).
 
 ## See also ...
 A database of hashes for fast sequence ID mapping is by no means novel. 

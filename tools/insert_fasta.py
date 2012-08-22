@@ -27,13 +27,12 @@ def FastaHeader2Dic(s, uniprot_style=False):
       dic['mnemonic'] = acc
     return dic
 
-def insert_seqlist(batch):
+def insert_seqlist(batch, start=0, end=0):
   sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
                     (start, \
                      batch[0]['ids'][0], \
                      end, \
                      batch[-1:][0]['ids'][0]) )
-  
   req = urllib2.Request(server_url+'/seguid', 
                         json.dumps(batch), headers)
 
@@ -105,25 +104,25 @@ if __name__ == "__main__":
 
     batch = seqs_to_send[start:end]
     try:
-      resp = insert_seqlist(batch)
+      resp = insert_seqlist(batch, start, end)
     except urllib2.HTTPError:
-      # split batch into two parts and retry
       time.sleep(5.0)
-      resp = insert_seqlist(batch[0:len(batch)/2])
-      resp = insert_seqlist(batch[len(batch)/2:len(batch)/2 + len(batch)%2])
+      sys.stderr.write("# Insert failed, retrying ..\n")
+      resp = insert_seqlist(batch, start, end)
       
     if resp['failed']:
       failed.append(resp['failed'])
+      
+    start = end
     
   end = len(seqs_to_send)
   batch = seqs_to_send[start:end+1]
   try:
-    resp = insert_seqlist(batch)
+    resp = insert_seqlist(batch, start, end)
   except urllib2.HTTPError:
-    # split batch into two parts and retry
     time.sleep(5.0)
-    resp = insert_seqlist(batch[0:len(batch)/2])
-    resp = insert_seqlist(batch[len(batch)/2:len(batch)/2 + len(batch)%2])
+    sys.stderr.write("# Insert failed, retrying ..\n")
+    resp = insert_seqlist(batch)
   
   sys.stderr.write("# Done\n")
   
