@@ -116,10 +116,12 @@ Inserting/updating ~ 4000 typical sequences takes ~ 80 seconds
 ## TODO:
 
 * Use task queues for bulk insertion.
-* Save on datastore write operations by first checking if
-  a SEGUID<->ID mapping list wouldn't change upon update, don't
-  re-insert the exact same thing. Also add a URL option for 
-  'don't update if SEGUID exists in datastore'.
+* Change the JSON bulk submission format from a JSON list to a dictionary
+  (containing a 'sequences' list) so that we can add other configuration options
+  to this submission. 
+* Add a config option (in the JSON request) for 'don't update if SEGUID 
+  exists in datastore' (irrespective of whether the id list would change 
+  or not).
 * Use memcache for GETs.
 * Add OpenID / Googe Account authentication to insert operations where 
   the hash is provided by the client. This way we can at least better track

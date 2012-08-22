@@ -187,6 +187,7 @@ class SeguidMapping(webapp2.RequestHandler):
     """
     
     jreq = simplejson.loads(self.request.body)
+    
     creation_ops = []
     update_ops = []
     for i in jreq:
@@ -221,11 +222,12 @@ class SeguidMapping(webapp2.RequestHandler):
                 
       existing = db.get(seguid_to_key(seguid))
       if existing:
-        existing.ids = list(set(existing.ids + ids))
-        update_ops.append( (seguid, db.put_async(existing)) )
-        #self.response.status = 204 # Success, (not returning any content)
-        #self.response.out.write('')
-        #return
+        new_id_list = list(set(existing.ids + ids))
+        # only do the put operation if new ids are being
+        # added, skip it if the update would be pointless
+        if len(existing.ids) != len(new_id_list):
+          existing.ids = list(set(existing.ids + ids))
+          update_ops.append( (seguid, db.put_async(existing)) )
       else:
         new_seguid = Seguid(seguid=seguid, ids=ids, 
                             key_name='seguid:'+seguid)

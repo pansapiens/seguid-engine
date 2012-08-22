@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from optparse import OptionParser
+
+tally = {}
 
 def FastaHeader2Dic(s, uniprot_style=False):
     """Convert NCBI or Uniprot sequence descriptors to a dictionary of db:accession pairs.
@@ -25,9 +26,29 @@ def FastaHeader2Dic(s, uniprot_style=False):
       acc = s.split('|')[-1:][0].split()[0]
       dic['mnemonic'] = acc
     return dic
+
+def insert_seqlist(batch):
+  sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
+                    (start, \
+                     batch[0]['ids'][0], \
+                     end, \
+                     batch[-1:][0]['ids'][0]) )
+  
+  req = urllib2.Request(server_url+'/seguid', 
+                        json.dumps(batch), headers)
+
+  resp = json.loads(urllib2.urlopen(req).read())
+  
+  tally['created'] += len(resp['created'])
+  tally['updated'] += len(resp['updated'])
+  tally['failed'] += len(resp['failed'])
     
+  return resp
+
 if __name__ == "__main__":
-  import sys, urllib2, json
+  import sys, time, urllib2, json
+  from optparse import OptionParser
+  
   parser = OptionParser(usage = "usage: %prog [options] sequences.fasta")
   parser.add_option("-u", "--uniprot", action="store_true", 
                     dest="uniprot_fasta", default=False,
@@ -83,38 +104,26 @@ if __name__ == "__main__":
   for end in range(options.batch_size, len(seqs_to_send), options.batch_size):
 
     batch = seqs_to_send[start:end]
-    sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
-                     (start, \
-                      batch[0]['ids'][0], \
-                      end, \
-                      batch[-1:][0]['ids'][0]) )
-
-    req = urllib2.Request(server_url+'/seguid', 
-                          json.dumps(batch), headers)
-    start = end
-    resp = json.loads(urllib2.urlopen(req).read())
-    tally['created'] += len(resp['created'])
-    tally['updated'] += len(resp['updated'])
-    tally['failed'] += len(resp['failed'])
+    try:
+      resp = insert_seqlist(batch)
+    except urllib2.HTTPError:
+      # split batch into two parts and retry
+      time.sleep(5.0)
+      resp = insert_seqlist(batch[0:len(batch)/2])
+      resp = insert_seqlist(batch[len(batch)/2:len(batch)/2 + len(batch)%2])
+      
     if resp['failed']:
       failed.append(resp['failed'])
     
   end = len(seqs_to_send)
   batch = seqs_to_send[start:end+1]
-  sys.stderr.write("# Inserting sequences %i (%s) to %i (%s) \n" % \
-                    (start, \
-                     batch[0]['ids'][0], \
-                     end, \
-                     batch[-1:][0]['ids'][0]) )
-  
-  req = urllib2.Request(server_url+'/seguid', 
-                        json.dumps(batch), headers)
-  resp = json.loads(urllib2.urlopen(req).read())
-  tally['created'] += len(resp['created'])
-  tally['updated'] += len(resp['updated'])
-  tally['failed'] += len(resp['failed'])
-  if resp['failed']:
-      failed.append(resp['failed'])
+  try:
+    resp = insert_seqlist(batch)
+  except urllib2.HTTPError:
+    # split batch into two parts and retry
+    time.sleep(5.0)
+    resp = insert_seqlist(batch[0:len(batch)/2])
+    resp = insert_seqlist(batch[len(batch)/2:len(batch)/2 + len(batch)%2])
   
   sys.stderr.write("# Done\n")
   
