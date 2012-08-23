@@ -16,33 +16,35 @@ SEGUID<->ID mapping.
 ### Lookup:
 
 #### By SEGUID:
-    $ curl -i -X GET "http://localhost:8080/seguid/7P65lsNr3DqnqDYPw8AIyhSKSOw"
+    $ curl -i -X GET "http://seguid-engine.appspot.com/seguid/7P65lsNr3DqnqDYPw8AIyhSKSOw"
 
     HTTP/1.0 200 
-    {"result": "success", "7P65lsNr3DqnqDYPw8AIyhSKSOw": ["sp|P82805", "ref|NP_198909.1", "gb|AAL58947.1"]}
+    {"result": "success", "7P65lsNr3DqnqDYPw8AIyhSKSOw": ["P82805", "NP_198909.1", "AAL58947.1"]}
 
-    $ curl -i -X GET "http://localhost:8080/seguid/7P65lsNr3DqnqDYPw8AIyhSKSOw,NetfrtErWuBipcsdLZvTy/rTS80"
+    $ curl -i -X GET "http://seguid-engine.appspot.com/seguid/7P65lsNr3DqnqDYPw8AIyhSKSOw,NetfrtErWuBipcsdLZvTy/rTS80"
 
     HTTP/1.0 200 
-    {"NetfrtErWuBipcsdLZvTy/rTS80": ["sp|P14693", "ref|NP_011951.1", "gb|AAB68885.1"], "result": "success", "7P65lsNr3DqnqDYPw8AIyhSKSOw": ["sp|P82805", "ref|NP_198909.1", "gb|AAL58947.1"]}
+    {"NetfrtErWuBipcsdLZvTy/rTS80": ["P14693", "NP_011951.1", "AAB68885.1"], "result": "success", "7P65lsNr3DqnqDYPw8AIyhSKSOw": ["P82805", "NP_198909.1", "AAL58947.1"]}
 
 #### By ID:
-    $ curl -i -X GET "http://alhost:8080/id/sp|P50110,ref|NP_013776.1"
+    $ curl -i -X GET "http://seguid-engine.appspot.com/id/P50110,NP_013776.1"
     HTTP/1.0 200
-    {"sp|P50110": "X65U9zzmdcFqBX7747SdO38xuok", "result": "success", "ref|NP_013776.1": "X65U9zzmdcFqBX7747SdO38xuok"}
+    {"P50110": "X65U9zzmdcFqBX7747SdO38xuok", "result": "success", "NP_013776.1": "X65U9zzmdcFqBX7747SdO38xuok"}
+    
+(Thanks to jcao219 for adding this feature)
     
 ### Create:
 
 #### Store SEGUID <-> ID mappings using SEGUIDs calculated by the server, using the sequence:
 
-    $  curl -i -H 'content-type:application/json' -d @seguid_post_example.json http://localhost:8080/seguid
+    $  curl -i -H 'content-type:application/json' -d @seguid_post_example.json http://seguid-engine.appspot.com/seguid
         
     HTTP/1.0 201
     {"failed": [], "created": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "updated": [], "unchanged": [], "result": "success"}
     
     ... where the input file seguid_post_exaple.json contains:
     
-    [{"ids": ["sp|P50110", "gb|AAS56315.1"], "seq": "MVKGSVHLWGKDGKASLISV"}, {"ids": ["sp|A2QRI9"], "seq": "MSVQMALPRPQVGLIVPRPQ"}]
+    [{"ids": ["P50110", "AAS56315.1"], "seq": "MVKGSVHLWGKDGKASLISV"}, {"ids": ["A2QRI9"], "seq": "MSVQMALPRPQVGLIVPRPQ"}]
 
 ### Update:
 
@@ -107,18 +109,6 @@ The minimum "Pending Latency" was set to 15 sec in Application Settings
 be inserted before the request times out. In my testing, a batch size of 1000 
 (-b 1000) seems to be generally safe from timeouts but larger batches may take 
 too long to insert triggering a DeadlineExceeded exception.
-
-## DONE:
-* Add addtional ids to a seguid:[id_list] mapping using POST, 
-  (also blindly trusting client)
-* Retrieve a seguid:[id_list] mapping
-* Retrieve multiple seguid:[id_list] mappings in one operation
-* Retrieve SEGUID's based on ID (Thanks to jcao219).
-* Insert seguid mappings via FASTA sequence(s). Only accept sane FASTA headers
-  that can create good mappings via the commandline tool 
-  (Hashes calculated server-side without authentication, calculated 
-   client-side with authentication.).
-* Insert multiple seguid:[id_list] mappings at once using POST to /seguid/.
    
 ## TODO:
 
@@ -130,6 +120,11 @@ too long to insert triggering a DeadlineExceeded exception.
   or not).
 * Use memcache for GETs.
 * Use task queues for bulk insertion.
+* Send an error if the batch size is too large (eg, > 1000) 
+  (eg "413 Request Entity Too Large")
+* Catch "over quota" and "deadline exceeded" errors and return a sensible 
+  response (eg, "509 Bandwidth Limit Exceeded" and "429 Too Many Requests")
+* Some smarter interpretation of database codes eg. gi|1234567 vs. 1234567 
 * Web interface - lookup id mappings by sequence (NO web interface for
   insertion - require scripting/commandline for this for the moment)
 * Consider using Base32-SHA1 instead (like Magnet 
