@@ -118,6 +118,7 @@ too long to insert triggering a DeadlineExceeded exception.
 * Add a config option (in the JSON request) for 'don't update if SEGUID 
   exists in datastore' (irrespective of whether the id list would change 
   or not).
+* Write importer for Uniprot XML (or 'old' Swiss-Prot format DR records)
 * Use memcache for GETs.
 * Use task queues for bulk insertion.
 * Send an error if the batch size is too large (eg, > 1000) 
