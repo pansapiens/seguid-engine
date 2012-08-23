@@ -38,7 +38,7 @@ SEGUID<->ID mapping.
     $  curl -i -H 'content-type:application/json' -d @seguid_post_example.json http://localhost:8080/seguid
         
     HTTP/1.0 201
-    {"failed": [], "created": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "updated": [], "result": "success"}
+    {"failed": [], "created": ["6bObRAVfVkQClLJSQYUw1VlQnU0", "LIt5X1VKZ/LF864/+9OlMi54szY"], "updated": [], "unchanged": [], "result": "success"}
     
     ... where the input file seguid_post_exaple.json contains:
     
@@ -50,8 +50,8 @@ SEGUID<->ID mapping.
 
 ### Update:
 
-As per creating SEGUID mappings. We can add additional mappings, 
-but never take them away.
+As per creating SEGUID mappings. We can add additional mappings, but never take 
+them away.
 
 ### Bulk insertion from a FASTA database:
 
@@ -100,6 +100,16 @@ Inserting/updating ~ 4000 typical sequences takes ~ 80 seconds
     real	1m22.123s
     user	0m0.136s
     sys	0m0.036s
+
+In another test (using commit a02c554df6) I was able to insert ~400,000 Uniprot
+sequences (SEGUID + mapping to two IDs) in ~ 4 hours.
+This cost $2.00 in App Engine charges, with the "Datastore Write Operations" 
+contributing to about ~90 % of the cost. 
+The minimum "Pending Latency" was set to 15 sec in Application Settings 
+(longest possible latency setting) to allow the largest possible batch size to 
+be inserted before the request times out. In my testing, a batch size of 1000 
+(-b 1000) seems to be generally safe from timeouts but larger batches may take 
+too long to insert triggering a DeadlineExceeded exception.
 
 ## DONE:
 * Add addtional ids to a seguid:[id_list] mapping using POST, 
