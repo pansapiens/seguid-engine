@@ -103,12 +103,20 @@ if __name__ == "__main__":
   for end in range(options.batch_size, len(seqs_to_send), options.batch_size):
 
     batch = seqs_to_send[start:end]
-    try:
-      resp = insert_seqlist(batch, start, end)
-    except urllib2.HTTPError:
-      time.sleep(5.0)
-      sys.stderr.write("# Insert failed, retrying ..\n")
-      resp = insert_seqlist(batch, start, end)
+    retries = 0
+    while retries <= 3:
+      try:
+        resp = insert_seqlist(batch, start, end)
+      except urllib2.HTTPError:
+        retries += 1
+        sys.stderr.write("# Insert failed, retrying ..\n")
+        time.sleep(5.0*retries)
+    else:
+      if resp['failed']:
+        failed.append(resp['failed'])
+      # if we are getting 500 error 'complete fails', break the loop
+      # don't just keep hammering
+      break
       
     if resp['failed']:
       failed.append(resp['failed'])
@@ -117,12 +125,17 @@ if __name__ == "__main__":
     
   end = len(seqs_to_send)
   batch = seqs_to_send[start:end+1]
-  try:
-    resp = insert_seqlist(batch, start, end)
-  except urllib2.HTTPError:
-    time.sleep(5.0)
-    sys.stderr.write("# Insert failed, retrying ..\n")
-    resp = insert_seqlist(batch)
+  retries = 0
+  while retries <= 3:
+    try:
+      resp = insert_seqlist(batch, start, end)
+    except urllib2.HTTPError:
+      retries += 1
+      sys.stderr.write("# Insert failed, retrying ..\n")
+      time.sleep(5.0*retries)
+  else:
+    if resp['failed']:
+      failed.append(resp['failed'])
   
   sys.stderr.write("# Done\n")
   
