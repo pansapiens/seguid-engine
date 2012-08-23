@@ -44,10 +44,6 @@ SEGUID<->ID mapping.
     
     [{"ids": ["sp|P50110", "gb|AAS56315.1"], "seq": "MVKGSVHLWGKDGKASLISV"}, {"ids": ["sp|A2QRI9"], "seq": "MSVQMALPRPQVGLIVPRPQ"}]
 
-#### Store a SEGUID <-> ID mappings using client-side calculated SEGUIDs:
-    _TODO_
-    _Example of authenticating with curl, saving the cookie, then using it in a request_
-
 ### Update:
 
 As per creating SEGUID mappings. We can add additional mappings, but never take 
@@ -73,6 +69,7 @@ or Uniprot.
                               Number of sequences to insert per request.
                               Lower this value if you get '500: Internal
                               Server Error' due to timeouts.
+        -f, --failed          List SEGUIDs that failed to insert. 
                   
     $ ./insert_fasta.py -u -s http://localhost:8080 my_uniprot_sequences.fasta
 
@@ -125,7 +122,6 @@ too long to insert triggering a DeadlineExceeded exception.
    
 ## TODO:
 
-* Use task queues for bulk insertion.
 * Change the JSON bulk submission format from a JSON list to a dictionary
   (containing a 'sequences' list) so that we can add other configuration options
   to this submission. 
@@ -133,10 +129,7 @@ too long to insert triggering a DeadlineExceeded exception.
   exists in datastore' (irrespective of whether the id list would change 
   or not).
 * Use memcache for GETs.
-* Add OpenID / Googe Account authentication to insert operations where 
-  the hash is provided by the client. This way we can at least better track
-  losers who dirty up the database.
-* Javascript calculation of SEGUID hashes.
+* Use task queues for bulk insertion.
 * Web interface - lookup id mappings by sequence (NO web interface for
   insertion - require scripting/commandline for this for the moment)
 * Consider using Base32-SHA1 instead (like Magnet 
