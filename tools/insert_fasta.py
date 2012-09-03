@@ -107,6 +107,7 @@ if __name__ == "__main__":
     while retries <= 3:
       try:
         resp = insert_seqlist(batch, start, end)
+        break
       except urllib2.HTTPError:
         retries += 1
         sys.stderr.write("# Insert failed, retrying ..\n")
@@ -129,6 +130,7 @@ if __name__ == "__main__":
   while retries <= 3:
     try:
       resp = insert_seqlist(batch, start, end)
+      break
     except urllib2.HTTPError:
       retries += 1
       sys.stderr.write("# Insert failed, retrying ..\n")
